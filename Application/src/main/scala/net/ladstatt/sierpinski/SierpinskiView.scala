@@ -6,8 +6,19 @@ import android.graphics._
 import android.util.{AttributeSet, SparseArray}
 import android.view.{MotionEvent, View}
 
+import scala.Option
 
+/**
+  * Implements a view which displays a sierpinski triangle.
+  *
+  * @param context
+  * @param attrs
+  */
 class SierpinskiView(val context: Context, val attrs: AttributeSet) extends View(context, attrs) {
+
+  var someWidth: Option[Int] = None
+
+  var someSierpinski: Option[Sierpinski] = None
 
   val White = {
     val p = new Paint
@@ -24,12 +35,35 @@ class SierpinskiView(val context: Context, val attrs: AttributeSet) extends View
   override protected def onDraw(canvas: Canvas) {
     super.onDraw(canvas)
 
-    val height: Int = getHeight
-    val width: Int = getWidth
+    val currentWidth = getWidth
 
-    val triangles: List[Triangle] = Sierpinski.mkSierpinski(Triangle(Pos(0, 0), width.toFloat), 7)
+    someWidth match {
+      case Some(width) if width == currentWidth => // do nothing
+      case _ =>
+        val w = Math.min(currentWidth, getHeight)
+        someWidth = Option(w)
+        val sierpinski: Sierpinski = Sierpinski(Triangle(Pos(0, 0), w), 7)
+        someSierpinski = Option(sierpinski)
+        drawSierpinski(canvas, sierpinski)
+    }
 
-    for (t <- triangles) {
+  }
+
+
+  def drawSierpinski(canvas: Canvas, sierpinski: Sierpinski): Unit = {
+
+    def toPath(t: Triangle): Path = {
+      val p = new Path()
+      p.setFillType(Path.FillType.EVEN_ODD)
+      p.moveTo(t.a.x, t.a.y)
+      p.lineTo(t.b.x, t.b.y)
+      p.lineTo(t.c.x, t.c.y)
+      p.lineTo(t.a.x, t.a.y)
+      p.close()
+      p
+    }
+
+    for (t <- sierpinski.triangles) {
       val p: Paint = t.color match {
         case SColor.White => White
         case SColor.Black => Black
@@ -38,24 +72,4 @@ class SierpinskiView(val context: Context, val attrs: AttributeSet) extends View
     }
   }
 
-  def convert(c: SColor): Color = {
-    new Color()
-  }
-
-  def asArray(t: Triangle): Array[Float] = {
-    Array(t.a.x, t.a.y, t.b.x, t.b.y,
-      t.b.x, t.b.y, t.c.x, t.c.y,
-      t.c.x, t.c.y, t.a.x, t.a.y)
-  }
-
-  def toPath(t: Triangle): Path = {
-    val p = new Path()
-    p.setFillType(Path.FillType.EVEN_ODD)
-    p.moveTo(t.a.x, t.a.y)
-    p.lineTo(t.b.x, t.b.y)
-    p.lineTo(t.c.x, t.c.y)
-    p.lineTo(t.a.x, t.a.y)
-    p.close()
-    p
-  }
 }
